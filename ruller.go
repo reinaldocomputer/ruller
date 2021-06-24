@@ -21,7 +21,16 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
+
+	cors "github.com/itsjamie/gin-cors"
+	"github.com/gin-gonic/gin"
 )
+
+type HTTPServer struct {
+	server *http.Server
+	router *gin.Engine
+}
+
 
 //InputType input type for required input names declaration
 type InputType int
@@ -298,8 +307,29 @@ func mergeMaps(rinfo *ruleInfo, sourceMap map[string]interface{}, destMapP *map[
 	}
 }
 
+
+func NewHTTPServer() *HTTPServer {
+	router := gin.Default()
+
+	router.Use(cors.Middleware(cors.Config{
+		Origins:         "*",
+		Methods:         "POST, GET, OPTIONS",
+		RequestHeaders:  "Origin, Content-Type",
+		ExposedHeaders:  "",
+		MaxAge:          24 * 3600 * time.Second,
+		Credentials:     false,
+		ValidateHeaders: false,
+	}))
+
+	h := &HTTPServer{server: &http.Server{
+		Addr:    ":3000",
+		Handler: router,
+	}, router: router}
+	return h
+}
+
 //StartServer Initialize and start REST server
-func StartServer() error {
+func (s *HTTPServer) StartServer() error {
 	listenPort := flag.Int("listen-port", 3000, "REST API server listen port")
 	listenIP := flag.String("listen-address", "0.0.0.0", "REST API server listen ip address")
 	geolitedb := flag.String("geolite2-db", "", "Geolite mmdb database file. If not defined, localization info based on IP will be disabled")

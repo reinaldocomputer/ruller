@@ -132,7 +132,10 @@ func main() {
 		}
 	}
 
-	if err := ruller.StartServer(); err != nil {
-		logrus.Errorf("error starting server %s", err.Error())
+	h := ruller.NewHTTPServer()
+	err = h.StartServer()
+	if err != nil {
+		logrus.Errorf("Error starting server. err=%s", err)
 	}
+
 }
