@@ -15,12 +15,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"github.com/oschwald/geoip2-golang"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
+	
 )
 
 //InputType input type for required input names declaration
@@ -369,6 +371,10 @@ func StartServer() error {
 		}
 	}
 
+	headersOk := handlers.AllowedHeaders([]string{"X-Requested-With"})
+	originsOk := handlers.AllowedOrigins([]string{"*"})
+	methodsOk := handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "OPTIONS"})
+	
 	router := mux.NewRouter()
 	router.HandleFunc("/rules/{groupName}", HandleRuleGroup).Methods("POST")
 	router.Handle("/metrics", promhttp.Handler())
@@ -377,7 +383,7 @@ func StartServer() error {
 	}
 	listen := fmt.Sprintf("%s:%d", *listenIP, *listenPort)
 	logrus.Infof("Listening at %s", listen)
-	err := http.ListenAndServe(listen, router)
+	err := http.ListenAndServe(listen, handlers.CORS(originsOk, headersOk, methodsOk)(router))
 	if err != nil {
 		return err
 	}
